@@ -12,15 +12,20 @@ function check_pods() {
 
 function buildAndInstall() {
     project=$1
-    echo "Will start build and install of $project"
+    echo "Will start build and install of chainsaw-$project"
     {
-    	mvn clean package jib:dockerBuild -f $project
+    	mvn clean package jib:dockerBuild -f chainsaw-$project
     } || {
         echo "mvn not found or faild"
 	exit 0
     }
     {
-        helm install charts/$project --name $project
+    kind load docker-image app/chainsaw-$project:0.0.1-SNAPSHOT
+    } || {
+       echo "kind not present"
+    }
+    {
+        helm upgrade --install $project charts/chainsaw-app-service -f charts/chainsaw-app-service/development/$project-values.yaml
     } || {
         echo "helm not found or faild."
 	exit 0
@@ -37,8 +42,6 @@ function install() {
         exit 0
     }
 
-    buildAndInstall chainsaw-config-server
-    buildAndInstall chainsaw-account-service
-    buildAndInstall chainsaw-bank-service
+    buildAndInstall account-service
     check_pods
 }
